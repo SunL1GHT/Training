@@ -10,22 +10,22 @@ import sys
 
 # class Calib:
 #     def __init__(self,mtx,dist,rmtx,tmtx):
-#         self.Nx_cor = 29  # 横向
+#         self.Nx_cor = 19  # 横向
 #         self.Ny_cor = 15  # 竖向
 #         self.mtx = mtx
 #         self.dist = dist
 #         self.rmtx = rmtx
 #         self.tmtx = tmtx
-#
+
 #         # 标定，获取内参，同一相机内参矩阵固定
 #         try:
-#             npzfile = np.load('../src/Calibresult/calibrate.npz')
+#             npzfile = np.load('../Calibresult/calibrate.npz')
 #             self.mtx = npzfile['mtx']
 #             self.dist = npzfile['dist']
 #         except IOError:
 #             print("重新标定相机...")
 #             self.calibrate
-#
+
 #         # 二次标定,获取相机-标定板外参
 #         try:
 #             npzfile1 = np.load('../Calibresult/Transfer.npz')
@@ -34,18 +34,18 @@ import sys
 #         except IOError:
 #             print("重新标定外参...")
 #             self.Transfer
-#
+
 #     def calibrate(self):
 #         # 设置寻找亚像素角点的参数，采用的停止准则是最大迭代次数30和最大误差容限0.001
 #         criteria = (cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, 30, 0.001)
 #         # 获取标定板角点的位置
 #         objp = np.zeros((self.Nx_cor * self.Ny_cor, 3), np.float32)
 #         objp[:, :2] = np.mgrid[0:self.Nx_cor * 5:5, 0:self.Ny_cor * 5:5].T.reshape(-1, 2)  # 将世界坐标系建在标定板上，所有点的Z坐标全部为0，所以只需要赋值x和y
-#
+
 #         obj_points = []  # 存储3D点
 #         img_points = []  # 存储2D点
-#
-#         images = sorted(glob.glob("../src/Calibsource/calib*.jpg"))
+
+#         images = sorted(glob.glob("../Calibsource/calib*.jpg"))
 #         for fname in images:
 #             # print(fname)
 #             img = cv2.imread(fname)
@@ -57,7 +57,7 @@ import sys
 #                 corners = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)  # 在原角点的基础上寻找亚像素角点
 #                 obj_points.append(objp)
 #                 img_points.append(corners)
-#
+
 #                 cv2.drawChessboardCorners(img, (self.Nx_cor, self.Ny_cor), corners, ret)  # OpenCV的绘制函数一般无返回值
 #                 cv2.imshow('img', img)
 #                 cv2.waitKey(800)
@@ -66,7 +66,7 @@ import sys
 #         global mtx, dist
 #         # 标定
 #         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
-#
+
 #         # 衡量误差
 #         tot_error = 0
 #         for i in range(len(obj_points)):
@@ -76,16 +76,16 @@ import sys
 #         print("重投影误差:", tot_error / len(obj_points))
 #         print("-----------------------------------------------------")
 #         np.savez('../Calibresult/calibrate.npz', mtx=mtx, dist=dist[0:4])
-#
+
 #     # 得到相机的外参矩阵
 #     def Transfer(self):
 #         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 #         objp = np.zeros((self.Nx_cor * self.Ny_cor, 3), np.float32)
 #         objp[:, :2] = np.mgrid[0:self.Nx_cor * 30:30, 0:self.Ny_cor * 30:30].T.reshape(-1, 2)
-#
+
 #         print("外参标定时采用的内参矩阵为:\n", mtx)
 #         # 载入固定标定图
-#         images = glob.glob('../src/Calibsource/calib1.jpg')  # 选择需要标定的图片
+#         images = glob.glob('../Calibsource/calib1.jpg')  # 选择需要标定的图片
 #         if len(images) == 0:
 #             print('No Test Picture can be loading!')
 #             exit()
@@ -147,10 +147,8 @@ class MainWindow(QWidget):
         # 控件实例化与对应的信号
         ## 视频展示
         self.lbl = QLabel(self)
-        # self.lbl.resize(200, 100)
         self.lbl.setFixedWidth(960)
         self.lbl.setFixedHeight(960)
-
 
         ## 按钮
         self.openCameraBtn = QPushButton('打开相机')
@@ -211,7 +209,6 @@ class MainWindow(QWidget):
         self.fbox.addRow(self.catchBtn)
         self.fbox.addRow(self.closeCameraBtn)
         self.fbox.setRowWrapPolicy(QFormLayout.WrapAllRows)  # 字段总是位与标签的下方
-
         self.hbox.addLayout(self.fbox)
 
         self.setLayout(self.hbox)   # 设置widget控件布局为水平布局
