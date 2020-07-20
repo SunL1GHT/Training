@@ -8,101 +8,96 @@ import numpy as np
 import glob
 import sys
 
-# class Calib:
-#     def __init__(self,mtx,dist,rmtx,tmtx):
-#         self.Nx_cor = 19  # 横向
-#         self.Ny_cor = 15  # 竖向
-#         self.mtx = mtx
-#         self.dist = dist
-#         self.rmtx = rmtx
-#         self.tmtx = tmtx
+class Calib:
+    def __init__(self):
+        self.Nx_cor = 19  # 横向
+        self.Ny_cor = 15  # 竖向
+ 
+        # 标定，获取内参，同一相机内参矩阵固定
+        try:
+            npzfile = np.load('/home/gxg/Desktop/Training/CamCalib/Calibresult/calibrate.npz')
+            self.mtx = npzfile['mtx']
+            self.dist = npzfile['dist']
+        except IOError:
+            print("重新标定相机...")
+            self.calibrate()
 
-#         # 标定，获取内参，同一相机内参矩阵固定
-#         try:
-#             npzfile = np.load('../Calibresult/calibrate.npz')
-#             self.mtx = npzfile['mtx']
-#             self.dist = npzfile['dist']
-#         except IOError:
-#             print("重新标定相机...")
-#             self.calibrate
+        # 二次标定,获取相机-标定板外参
+        try:
+            npzfile1 = np.load('/home/gxg/Desktop/Training/CamCalib/Calibresult/Transfer.npz')
+            self.rmtx = npzfile1['rmtx']
+            self.tmtx = npzfile1['tmtx']
+        except IOError:
+            print("重新标定外参...")
+            self.Transfer()
 
-#         # 二次标定,获取相机-标定板外参
-#         try:
-#             npzfile1 = np.load('../Calibresult/Transfer.npz')
-#             rmtx = npzfile1['rmtx']
-#             tmtx = npzfile1['tmtx']
-#         except IOError:
-#             print("重新标定外参...")
-#             self.Transfer
+    def calibrate(self):
+        # 设置寻找亚像素角点的参数，采用的停止准则是最大迭代次数30和最大误差容限0.001
+        criteria = (cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, 30, 0.001)
+        # 获取标定板角点的位置
+        objp = np.zeros((self.Nx_cor * self.Ny_cor, 3), np.float32)
+        objp[:, :2] = np.mgrid[0:self.Nx_cor * 5:5, 0:self.Ny_cor * 5:5].T.reshape(-1, 2)  # 将世界坐标系建在标定板上，所有点的Z坐标全部为0，所以只需要赋值x和y
 
-#     def calibrate(self):
-#         # 设置寻找亚像素角点的参数，采用的停止准则是最大迭代次数30和最大误差容限0.001
-#         criteria = (cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, 30, 0.001)
-#         # 获取标定板角点的位置
-#         objp = np.zeros((self.Nx_cor * self.Ny_cor, 3), np.float32)
-#         objp[:, :2] = np.mgrid[0:self.Nx_cor * 5:5, 0:self.Ny_cor * 5:5].T.reshape(-1, 2)  # 将世界坐标系建在标定板上，所有点的Z坐标全部为0，所以只需要赋值x和y
+        obj_points = []  # 存储3D点
+        img_points = []  # 存储2D点
+        images = glob.glob("/home/gxg/Desktop/Training/CamCalib/Calibsource/calib*.jpg")
+        for fname in images:
+            # print(fname)
+            img = cv2.imread(fname)
+            cv2.imshow('img', img)
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            ret, corners = cv2.findChessboardCorners(gray, (self.Nx_cor, self.Ny_cor), None)
+            print(ret)
+            if ret:
+                corners = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)  # 在原角点的基础上寻找亚像素角点
+                obj_points.append(objp)
+                img_points.append(corners)
 
-#         obj_points = []  # 存储3D点
-#         img_points = []  # 存储2D点
+                cv2.drawChessboardCorners(img, (self.Nx_cor, self.Ny_cor), corners, ret)  # OpenCV的绘制函数一般无返回值
+                cv2.imshow('img', img)
+                cv2.waitKey(800)
+        print('共计', len(img_points), '张图片')
 
-#         images = sorted(glob.glob("../Calibsource/calib*.jpg"))
-#         for fname in images:
-#             # print(fname)
-#             img = cv2.imread(fname)
-#             cv2.imshow('img', img)
-#             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#             ret, corners = cv2.findChessboardCorners(gray, (self.Nx_cor, self.Ny_cor), None)
-#             print(ret)
-#             if ret:
-#                 corners = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)  # 在原角点的基础上寻找亚像素角点
-#                 obj_points.append(objp)
-#                 img_points.append(corners)
+        # global mtx, dist
+        # 标定
+        ret, self.mtx, self.dist, self.rvecs, self.tvecs = cv2.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
 
-#                 cv2.drawChessboardCorners(img, (self.Nx_cor, self.Ny_cor), corners, ret)  # OpenCV的绘制函数一般无返回值
-#                 cv2.imshow('img', img)
-#                 cv2.waitKey(800)
-#         print('共计', len(img_points), '张图片')
-#         # global mtx, dist, rvecs, tvecs
-#         global mtx, dist
-#         # 标定
-#         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
+        # 衡量误差
+        tot_error = 0
+        for i in range(len(obj_points)):
+            img_points2, _ = cv2.projectPoints(obj_points[i], self.rvecs[i], self.tvecs[i], self.mtx, self.dist)
+            error = cv2.norm(img_points[i], img_points2, cv2.NORM_L2) / len(img_points2)
+            tot_error += error
+        print("重投影误差:", tot_error / len(obj_points))
+        # print("-----------------------------------------------------")
+        np.savez('/home/gxg/Desktop/Training/CamCalib/Calibresult/calibrate.npz', mtx=self.mtx, dist=self.dist[0:4])
 
-#         # 衡量误差
-#         tot_error = 0
-#         for i in range(len(obj_points)):
-#             img_points2, _ = cv2.projectPoints(obj_points[i], rvecs[i], tvecs[i], mtx, dist)
-#             error = cv2.norm(img_points[i], img_points2, cv2.NORM_L2) / len(img_points2)
-#             tot_error += error
-#         print("重投影误差:", tot_error / len(obj_points))
-#         print("-----------------------------------------------------")
-#         np.savez('../Calibresult/calibrate.npz', mtx=mtx, dist=dist[0:4])
+    # 得到相机的外参矩阵
+    def Transfer(self):
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        objp = np.zeros((self.Nx_cor * self.Ny_cor, 3), np.float32)
+        objp[:, :2] = np.mgrid[0:self.Nx_cor * 30:30, 0:self.Ny_cor * 30:30].T.reshape(-1, 2)
 
-#     # 得到相机的外参矩阵
-#     def Transfer(self):
-#         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-#         objp = np.zeros((self.Nx_cor * self.Ny_cor, 3), np.float32)
-#         objp[:, :2] = np.mgrid[0:self.Nx_cor * 30:30, 0:self.Ny_cor * 30:30].T.reshape(-1, 2)
-
-#         print("外参标定时采用的内参矩阵为:\n", mtx)
-#         # 载入固定标定图
-#         images = glob.glob('../Calibsource/calib1.jpg')  # 选择需要标定的图片
-#         if len(images) == 0:
-#             print('No Test Picture can be loading!')
-#             exit()
-#         img = cv2.imread(images[0])
-#         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)  # 灰度处理
-#         ret, corners = cv2.findChessboardCorners(gray, (self.Nx_cor, self.Ny_cor), None)  # 寻找角点
-#         print(ret)
-#         global rmtx, tmtx
-#         if ret:
-#             imgp = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)
-#             ret, rmtx, tmtx, inliers = cv2.solvePnPRansac(objp, imgp, mtx, dist)
-#             # print('像素原点:', imgp[0][0])
-#             # print('用户原点:', cameraToWorld(mtx, rmtx, tmtx, imgp[0][0])[0][0])
-#         print("-----------------------------------------------------")
-#         print(rmtx)
-#         # return rmtx,tmtx
-#         np.savez('../Calibresult/Transfer.npz', rmtx = rmtx, tmtx = tmtx)
+        print("外参标定时采用的内参矩阵为:\n", mtx)
+        # 载入固定标定图
+        images = glob.glob('/home/gxg/Desktop/Training/CamCalib/Calibsource/calib1.jpg')  # 选择需要标定的图片
+        if len(images) == 0:
+            print('No Test Picture can be loading!')
+            exit()
+        img = cv2.imread(images[0])
+        gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)  # 灰度处理
+        ret, corners = cv2.findChessboardCorners(gray, (self.Nx_cor, self.Ny_cor), None)  # 寻找角点
+        print(ret)
+        # global rmtx, tmtx
+        if ret:
+            imgp = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)
+            ret, self.rmtx, self.tmtx, inliers = cv2.solvePnPRansac(objp, imgp, mtx, dist)
+            # print('像素原点:', imgp[0][0])
+            # print('用户原点:', cameraToWorld(mtx, rmtx, tmtx, imgp[0][0])[0][0])
+        # print("-----------------------------------------------------")
+        # print(rmtx)
+        # return rmtx,tmtx
+        np.savez('/home/gxg/Desktop/Training/CamCalib/Calibresult/Transfer.npz', rmtx = self.rmtx, tmtx = self.tmtx)
 
 
 class MainWindow(QWidget):
@@ -156,13 +151,13 @@ class MainWindow(QWidget):
         self.openCameraBtn.clicked.connect(self.openCamera)
         self.CalibBtn = QPushButton('相机标定')
         self.CalibBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        # self.CalibBtn.clicked.connect(self.Calib)
+        self.CalibBtn.clicked.connect(self.OpenCalib)
         self.transBtn = QPushButton('外参标定')
         self.transBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         # self.transBtn.clicked.connect(self.)
         self.catchBtn = QPushButton('目标抓取')
         self.catchBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        # self.transBtn.clicked.connect(self.catch)
+        # self.catchBtn.clicked.connect(self.catch)
         self.closeCameraBtn = QPushButton('关闭相机')
         self.closeCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.closeCameraBtn.clicked.connect(self.closeCamera)
@@ -230,9 +225,11 @@ class MainWindow(QWidget):
         self.lbl.setStyleSheet("background:black;")
         self.lbl.setPixmap(QPixmap())   # 设置label的背景
 
-    def Calib(self):
+    def OpenCalib(self):
         # 实例化函数
         self.calib = Calib()
+        self.mtx_text.setText(self.calib.mtx)
+        self.rt_text.setText(self.calib.rmtx,self.calib.tmtx)
 
 
     def start(self):
