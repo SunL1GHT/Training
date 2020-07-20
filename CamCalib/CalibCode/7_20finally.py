@@ -29,7 +29,6 @@ def calibrate():
     
     print('共计',len(img_points),'张图片')
     global mtx, dist
-    # 标定
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, gray.shape[::-1], None, None)
     np.savez('../Calibresult/calibrate.npz', mtx=mtx, dist=dist[0:4])
 
@@ -43,16 +42,17 @@ def Transfer():
         exit()
     img = cv2.imread(images[0])
 
-    gray  = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    ret, corners = cv2.findChessboardCorners(gray, (Nx_cor, Ny_cor), None)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    ret, corners = cv2.findChessboardCorners(binary, (Nx_cor, Ny_cor), None)
 
     global rmtx,tmtx
     if ret:
-        imgp = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria) # 亚像素点
+        imgp = cv2.cornerSubPix(gray, corners, (1, 1), (-1, -1), criteria) # 亚像素点
         ret, rmtx, tmtx, inliers = cv2.solvePnPRansac(objp, imgp, mtx, dist)
 
     print('imgp:',imgp[0])
-    print('world:',cameraToWorld(mtx,rmtx,tmtx,imgp[0][0]))
+    print('world:',cameraToWorld(mtx,rmtx,tmtx,imgp))
     print("-----------------------------------------------------")
     np.savez('../Calibresult/Transfer.npz', rmtx = rmtx, tmtx = tmtx)
 
@@ -69,11 +69,11 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
     find = False # 是否检测到圆的标志,False--->未检测到圆，True--->检测到圆
-    Rx = 0
-    Ry = 0
-    Cx = 0
-    Cy = 0
-    angle = 0
+    # Rx = 0
+    # Ry = 0
+    # Cx = 0
+    # Cy = 0
+    # angle = 0
 
     for cnt in contours:
         area = cv2.contourArea(cnt)
@@ -81,8 +81,8 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
             cv2.drawContours(imgroi, cnt, -1, (255, 30, 255), 2)  # 绘制外轮廓
             (Cx, Cy), radius = cv2.minEnclosingCircle(cnt)
             Xcenter = (int(Cx), int(Cy))
-            Sx = Cx + 299
-            Sy = Cy + 154
+            Sx = Cx + 320
+            Sy = Cy
             circle_point = np.array([Sx, Sy], dtype=np.float32)
             cv2.circle(imgroi, Xcenter, int(radius), (255, 0, 0), 2)
             find = True
@@ -108,31 +108,32 @@ def cameraToWorld(cameraMatrix, r, t, imgPoints):
     # print('transPlaneToCam=', transPlaneToCam)
     worldpt = []
     coords = np.zeros((3, 1), dtype=np.float64)
-    coords[0][0] = imgPoints[0]
-    coords[1][0] = imgPoints[1]
-    coords[2][0] = 1.0
 
-    worldPtCam = np.dot(invK, coords)  # 3*3 dot 3*1 = 3*1
-    # print('worldPtCam=', worldPtCam)
-    # [x,y,1] * invR
-    worldPtPlane = np.dot(invR, worldPtCam)  # 3*3 dot 3*1 = 3*1
-    # print('worldPtPlane=', worldPtPlane)
-    # zc
-    scale = transPlaneToCam[2][0] / worldPtPlane[2][0]
-    # print("scale: ", scale)
-    # zc * [x,y,1] * invR
-    scale_worldPtPlane = np.multiply(scale, worldPtPlane)
-    # print("scale_worldPtPlane: ", scale_worldPtPlane)
-    # [X,Y,Z]=zc*[x,y,1]*invR - invR*T
-    worldPtPlaneReproject = np.asmatrix(scale_worldPtPlane) - np.asmatrix(transPlaneToCam)  # 3*1 dot 1*3 = 3*3
-    # print("worldPtPlaneReproject: ", worldPtPlaneReproject)
-    pt = np.zeros((3, 1), dtype=np.float64)
+    for imgpt in imgPoints:
+        coords[0][0] = imgpt[0][0]
+        coords[1][0] = imgpt[0][1]
+        coords[2][0] = 1.0
 
-    # 转为SCARA适合的笛卡尔右手坐标系
-    pt[0][0] = worldPtPlaneReproject[1][0]
-    pt[1][0] = worldPtPlaneReproject[0][0]
-    pt[2][0] = 0  # 世界坐标系的Z轴坐标，一般设定为0
-    worldpt.append(pt.T.tolist())
+        worldPtCam = np.dot(invK, coords)  # 3*3 dot 3*1 = 3*1
+        # print('worldPtCam=', worldPtCam)
+        # [x,y,1] * invR
+        worldPtPlane = np.dot(invR, worldPtCam)  # 3*3 dot 3*1 = 3*1
+        # print('worldPtPlane=', worldPtPlane)
+        # zc
+        scale = transPlaneToCam[2][0] / worldPtPlane[2][0]
+        # print("scale: ", scale)
+        # zc * [x,y,1] * invR
+        scale_worldPtPlane = np.multiply(scale, worldPtPlane)
+        # print("scale_worldPtPlane: ", scale_worldPtPlane)
+        # [X,Y,Z]=zc*[x,y,1]*invR - invR*T
+        worldPtPlaneReproject = np.asmatrix(scale_worldPtPlane) - np.asmatrix(transPlaneToCam)  # 3*1 dot 1*3 = 3*3
+        # print("worldPtPlaneReproject: ", worldPtPlaneReproject)
+        pt = np.zeros((3, 1), dtype=np.float64)
+        # 转为SCARA适合的笛卡尔右手坐标系
+        pt[0][0] = worldPtPlaneReproject[0][0]
+        pt[1][0] = worldPtPlaneReproject[1][0]
+        pt[2][0] = 0  # 世界坐标系的Z轴坐标，一般设定为0
+        worldpt.append(pt.T.tolist())
     # print('worldpt:',worldpt)
     return worldpt
 
