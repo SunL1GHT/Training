@@ -16,9 +16,6 @@ def calibrate():
     img_points = []  # 存储2D点
 
     images = sorted(glob.glob("../Calibsource/calib1.jpg"))
-    # cv2.imshow('img',cv2.imread(images[0]))
-    # cv2.waitKey(0)
-    # images = cv2.imread('../Calibsource/calib*.jpg')
     for fname in images:
         # print(fname)
         img = cv2.imread(fname)
