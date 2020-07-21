@@ -20,7 +20,7 @@ def calibrate():
         ret, corners = cv2.findChessboardCorners(gray, (Nx_cor, Ny_cor), None)
         print(ret)
         if ret:
-            corners = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)
+            corners = cv2.cornerSubPix(gray, corners, (5, 5), (1, 1), criteria)
             obj_points.append(objp)
             img_points.append(corners)
             cv2.drawChessboardCorners(img, (Nx_cor, Ny_cor), corners, ret)
@@ -68,7 +68,6 @@ def Transfer():
             imgp = np.flipud(imgp_temp)
 
         ret, rmtx, tmtx, inliers = cv2.solvePnPRansac(objp, imgp, mtx, dist)
-
         # project 3D points to image plane
         imgpts, jac = cv2.projectPoints(axis_axis, rmtx, tmtx, mtx, dist)
         img = draw_axis(img, imgp, imgpts)
@@ -92,33 +91,42 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
     imgGray = cv2.cvtColor(imgroi, cv2.COLOR_BGR2GRAY)
     ret, binary = cv2.threshold(imgGray, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
     Cx = 0
     Cy = 0
-    angel = 0
-
     find = False # 是否检测到圆的标志,False--->未检测到圆，True--->检测到圆
+   
     for cnt in contours:
         area = cv2.contourArea(cnt)
         # 工件大圆检测
-        if 1000 < area < 500000:
+        if 2000 < area < 500000:
             cv2.drawContours(imgroi, cnt, -1, (255, 30, 255), 2)  # 绘制外轮廓
+            # peri = cv2.arcLength(cnt, True)
+            # print('工件的周长是:', peri)
             (Cx, Cy), radius = cv2.minEnclosingCircle(cnt)
             Xcenter = (int(Cx), int(Cy))
-            circle_point = np.array([Cx + 320, Cy], dtype=np.float32)
-            cv2.circle(imgroi, Xcenter, int(radius), (255, 0, 0), 2)
+            Sx = Cx + 320
+            Sy = Cy
+            circle_point = np.array([Sx, Sy], dtype=np.float32)
+            radius = int(radius)
+            cv2.circle(imgroi, Xcenter, radius, (255, 0, 0), 2)
+            print("大圆中心坐标为：", Xcenter)
             find = True
 
         # 工件小圆检测
-        if 100 < area < 1000:
+        if 200 < area < 2000:
             cv2.drawContours(imgroi, cnt, -1, (255, 0, 255), 2)  # 绘制外轮廓
             peri = cv2.arcLength(cnt, True)
+            # print('圆的周长:',peri)
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+            # print('拐点坐标:',approx)
+            # print('圆的拐点个数为:',len(approx))
             x, y, w, h = cv2.boundingRect(approx)
             cv2.rectangle(imgroi, (x, y), (x + w, y + h), (0, 255, 0), 3)
             Rx = x + w / 2
             Ry = y + h / 2
             Ycenter = (int(Rx), int(Ry))
-            # print("圆心坐标为:", Ycenter)
+            print("小圆中心坐标为:", Ycenter)
             cv2.line(imgroi, (int(Cx), int(Cy)), (int(Rx), int(Ry)), (0, 255, 0), 2)
             a = np.array([int(Rx - Cx), int(Ry - Cy)])
             b = np.array([int(Cx), 0])
