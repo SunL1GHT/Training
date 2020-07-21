@@ -202,15 +202,15 @@ if __name__ == '__main__':
         print("重新标定相机...")
         calibrate()
 
-    # # 获取外参
-    # try:
-    #     npzfile1 = np.load('../Calibresult/Transfer.npz')
-    #     rmtx = npzfile1['rmtx']
-    #     tmtx = npzfile1['tmtx']
-    # except IOError:
-    #     print("重新标定外参...")
-    #     Transfer()
-    Transfer()
+    # 获取外参
+    try:
+        npzfile1 = np.load('../Calibresult/Transfer.npz')
+        rmtx = npzfile1['rmtx']
+        tmtx = npzfile1['tmtx']
+    except IOError:
+        print("重新标定外参...")
+        Transfer()
+
     DetectCircle(mtx, rmtx, tmtx)
 
     cv2.destroyAllWindows()
