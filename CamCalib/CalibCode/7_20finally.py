@@ -36,7 +36,7 @@ def Transfer():
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     objp = np.zeros((Nx_cor * Ny_cor, 3), np.float32)
     objp[:, :2] = np.mgrid[0:Nx_cor * 5:5, 0:Ny_cor * 5:5].T.reshape(-1, 2)
-    images = glob.glob('../Calibsource/calib1.jpg')
+    images = glob.glob('../Calibsource/Transfer.jpg')
     if len(images) == 0:
         print('No Test Picture can be loading!')
         exit()
@@ -57,7 +57,7 @@ def Transfer():
     np.savez('../Calibresult/Transfer.npz', rmtx = rmtx, tmtx = tmtx)
 
 def DetectCircle(matrix, Rmatrix, tmatrix):
-    image = glob.glob('../Calibresult/Circle.jpg')
+    image = glob.glob('../Calibsource/circle.jpg')
     if len(image) == 0:
         print('No Detect Picture can be loading!')
         exit()
