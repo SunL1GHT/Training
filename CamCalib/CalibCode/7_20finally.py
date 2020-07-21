@@ -33,6 +33,8 @@ def calibrate():
     np.savez('../Calibresult/calibrate.npz', mtx=mtx, dist=dist[0:4])
 
 def draw_axis(img, corners, imgpts):
+        corners = corners.astype(np.int32)
+        imgpts = imgpts.astype(np.int32)
         corner = tuple(corners[0].ravel())
         img = cv2.line(img, corner, tuple(imgpts[0].ravel()), (255,0,0), 5)
         cv2.putText(img, "x", tuple(imgpts[0].ravel()), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), 2)
@@ -92,8 +94,8 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
     ret, binary = cv2.threshold(imgGray, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     contours, hierarchy = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
-    Cx = 0
-    Cy = 0
+    # Cx = 0
+    # Cy = 0
     find = False # 是否检测到圆的标志,False--->未检测到圆，True--->检测到圆
    
     for cnt in contours:
