@@ -122,9 +122,9 @@ def cameraToWorld(cameraMatrix, r, t, imgPoints):
     return worldpt
 
 # 检测所截取图片中工件的圆心的像素坐标，并转换成世界坐标，最后返回图片编号，进入下一次循环
-def DetectCircle(image, i, matrix, Rmatrix, tmatrix):
+def DetectCircle( i, matrix, Rmatrix, tmatrix):
     # 载入图片
-    # image = glob.glob('../Calibresult/Circle%d.jpg' % i)
+    image = glob.glob('../Calibresult/Circle%d.jpg' % i)
     if len(image) == 0:
         print('No Detect Picture can be loading!')
         exit()
@@ -229,8 +229,7 @@ if __name__ == '__main__':
     #     print("重新标定外参...")
     #     Transfer()
 
-    # cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)    # 载入视频
-    cap = cv2.VideoCapture(0)  # 载入视频
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)    # 载入视频
     cap.set(3,1280)
     cap.set(4,720)
     count = 1    # 图片编号初始化
@@ -240,9 +239,7 @@ if __name__ == '__main__':
     print('请按空格键获取外参...')
     while True:
         isCaptured, frame = cap.read()
-        print("capture frame: ", isCaptured)
-        if not isCaptured:
-            continue
+        # print(frame.shape)
         cv2.imshow('frame', frame)
         k = cv2.waitKey(1)
         if k == ord(' '):
@@ -259,7 +256,7 @@ if __name__ == '__main__':
                 cv2.imwrite("../Calibresult/Circle%d.jpg" % count, frame)
                 print('Save Circle%d.jpg' % count)
                 # 检测圆心世界坐标值
-                count = DetectCircle(frame, count,mtx,rmtx,tmtx)
+                count = DetectCircle( count,mtx,rmtx,tmtx)
         if k == 27:
             break
     cap.release()

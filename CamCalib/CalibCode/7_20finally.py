@@ -51,7 +51,7 @@ def Transfer():
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.0001)
     objp = np.zeros((Nx_cor * Ny_cor, 3), np.float32)
     objp[:, :2] = np.mgrid[0:Nx_cor * 5:5, 0:Ny_cor * 5:5].T.reshape(-1, 2)
-    images = glob.glob('../Calibsource/Transfer.jpg')
+    images = glob.glob('../Calibsource/T.jpg')
     if len(images) == 0:
         print('No Test Picture can be loading!')
         exit()
@@ -83,7 +83,7 @@ def Transfer():
     np.savez('../Calibresult/Transfer.npz', rmtx = rmtx, tmtx = tmtx)
 
 def DetectCircle(matrix, Rmatrix, tmatrix):
-    image = glob.glob('../Calibsource/circle.jpg')
+    image = glob.glob('../Calibsource/111.jpg')
     if len(image) == 0:
         print('No Detect Picture can be loading!')
         exit()
@@ -101,7 +101,7 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
     for cnt in contours:
         area = cv2.contourArea(cnt)
         # 工件大圆检测
-        if 2000 < area < 500000:
+        if 1000 < area < 500000:
             cv2.drawContours(imgroi, cnt, -1, (255, 30, 255), 2)  # 绘制外轮廓
             # peri = cv2.arcLength(cnt, True)
             # print('工件的周长是:', peri)
@@ -116,7 +116,7 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
             find = True
 
         # 工件小圆检测
-        if 200 < area < 2000:
+        if 300 < area < 1000:
             cv2.drawContours(imgroi, cnt, -1, (255, 0, 255), 2)  # 绘制外轮廓
             peri = cv2.arcLength(cnt, True)
             # print('圆的周长:',peri)
@@ -143,6 +143,8 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
         cv2.imwrite('../Calibresult/detectedCircle.jpg', imgroi)
         print('圆心坐标为:', circle_point)
         print('圆心对应世界坐标为:', cameraToWorld(matrix, Rmatrix, tmatrix, circle_point)[0][0])
+        print(type(cameraToWorld(matrix, Rmatrix, tmatrix, circle_point)[0][0]))
+        print(type(angle))
         print("-----------------------------------------------------")
     else:
         print('圆心检测失败!')
@@ -181,11 +183,11 @@ def cameraToWorld(cameraMatrix, r, t, imgPoints):
     # print("worldPtPlaneReproject: ", worldPtPlaneReproject)
     pt = np.zeros((3, 1), dtype=np.float64)
     # 转为SCARA适合的笛卡尔右手坐标系
-    pt[0][0] = worldPtPlaneReproject[0][0]
-    pt[1][0] = worldPtPlaneReproject[1][0]
+    pt[0][0] = worldPtPlaneReproject[1][0]
+    pt[1][0] = worldPtPlaneReproject[0][0]
     pt[2][0] = 0  # 世界坐标系的Z轴坐标，一般设定为0
-    worldpt.append(pt.T.tolist())
-    # print('worldpt:',worldpt)
+    # worldpt.append(pt.T.tolist())
+    worldpt.append(pt.T)
     return worldpt
 
 if __name__ == '__main__':
