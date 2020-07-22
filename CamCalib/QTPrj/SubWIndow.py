@@ -2,7 +2,6 @@ from PySide2 import QtWidgets
 import sys
 
 class Window2(QtWidgets.QMainWindow):
-
     def __init__(self):
         super().__init__()
         self.setWindowTitle('子窗口')

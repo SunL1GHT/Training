@@ -2,6 +2,7 @@
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
+from camera.CameraInterface import *
 
 import cv2
 import numpy as np
@@ -112,8 +113,6 @@ class Calib:
             imgpts, jac = cv2.projectPoints(axis_axis, self.rmtx, self.tmtx, self.mtx, self.dist)
             img = self.draw_axis(img, imgp, imgpts)
 
-            # cv2.imshow('img', img)
-            # cv2.waitKey(2000)
             cv2.imwrite('../Calibresult/gesture.png', img)
 
             print('imgp:', imgp[0])
@@ -221,6 +220,9 @@ class Calib:
         # print('worldpt:',worldpt)
         return worldpt
 
+class AxisImg():
+    def
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -269,23 +271,18 @@ class MainWindow(QWidget):
 
         ## 按钮
         self.openCameraBtn = QPushButton('打开相机')
-        # self.openCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.openCameraBtn.setEnabled(True)
         self.openCameraBtn.clicked.connect(self.openCamera)
         self.CalibBtn = QPushButton('相机标定')
-        # self.CalibBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.CalibBtn.clicked.connect(self.OpenCalib)
         self.transBtn = QPushButton('外参标定')
-        # self.transBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.transBtn.setEnabled(False)
         self.transBtn.clicked.connect(self.calib_slot)
 
         self.catchBtn = QPushButton('目标抓取')
-        # self.catchBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.catchBtn.setEnabled(False)
         # self.catchBtn.clicked.connect(self.catch)
         self.closeCameraBtn = QPushButton('关闭相机')
-        # self.closeCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.closeCameraBtn.clicked.connect(self.closeCamera)
         self.closeCameraBtn.setEnabled(False)
 
@@ -293,8 +290,8 @@ class MainWindow(QWidget):
 
         ## 坐标跟踪
         self.setcoorTitle = QLabel('坐标设置')
-        self.setcoorLabel_X = QLabel('x')
-        self.setcoorLabel_Y = QLabel('y')
+        self.setcoorLabel_X = QLabel('x:')
+        self.setcoorLabel_Y = QLabel('y:')
         self.setcoorBox_X = QLineEdit()
         self.setcoorBox_Y = QLineEdit()
         self.setcoorBtn = QPushButton('确认')
@@ -319,7 +316,7 @@ class MainWindow(QWidget):
         self.angel_box.setReadOnly(True)
 
         ## 帮助信息
-        self.help_box = QTextEdit('功能介绍:'+'\r\n'+'')
+        self.help_box = QTextEdit()
 
         ## 界面布局
         self.hbox = QHBoxLayout(self)   # 添加一个水平布局
@@ -338,7 +335,6 @@ class MainWindow(QWidget):
 
         ### 坐标追踪
         self.gbox.addWidget(self.setcoorTitle,8,1,1,5)
-
         self.hcbox = QHBoxLayout(self)
         self.hcbox.addWidget(self.setcoorLabel_X)
         self.hcbox.addWidget(self.setcoorBox_X)
@@ -354,14 +350,17 @@ class MainWindow(QWidget):
         self.gbox.addWidget(self.yolov3Btn, 14,1,2,2)
         self.gbox.addWidget(self.catchBtn, 14,4,2,2)
         self.gbox.addWidget(self.help_box,16,1,5,5)
-
         self.hbox.addLayout(self.gbox)
 
         self.QLable_close()
         self.move(40, 40)
         self.setWindowTitle('OPEN CV_Video')
+        self.help_box.setText('功能介绍:\r\n'+
+                              '相机标定：标定相机的内外参数'+'\r\n'
+                              '外参标定：重新标定相机的外参'+'\r\n'
+                              '目标抓取：抓取工件')
 
-        self.setGeometry(300, 40, 1500, 1000)
+        self.setGeometry(300, 40, 1280, 1000)
         self.show()
 
     def calib_slot(self):
@@ -372,9 +371,12 @@ class MainWindow(QWidget):
         heigt, width = img_axis.shape[:2]
         pixmap = QImage(img_axis, width, heigt, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(pixmap)
+
+
         self.lbl.setPixmap(pixmap)
 
-        self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' + '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
+        self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' +
+                             '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
 
 
     def openCamera(self):
@@ -392,7 +394,8 @@ class MainWindow(QWidget):
         # 实例化函数
         self.calib = Calib()
         self.mtx_text.setText(np.array2string(self.calib.mtx,))
-        self.rt_text.setText('旋转向量：\r\n' + np.array2string(self.calib.rmtx,) +'\r\n\r\n'+ '平移向量:\r\n' + np.array2string(self.calib.tmtx,))
+        self.rt_text.setText('旋转向量：\r\n' + np.array2string(self.calib.rmtx,) +'\r\n\r\n'+
+                             '平移向量:\r\n' + np.array2string(self.calib.tmtx,))
         self.coor_box.setText(np.array2string(self.calib.circle_objp))
         self.angel_box.setText(np.array2string(self.calib.angle))
         self.CalibBtn.setEnabled(False)
