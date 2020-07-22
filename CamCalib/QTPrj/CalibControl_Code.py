@@ -2,7 +2,7 @@
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
-from CalibControl_UI import *
+from CalibControl_UI import CalibControlUI
 
 import cv2
 import numpy as np
