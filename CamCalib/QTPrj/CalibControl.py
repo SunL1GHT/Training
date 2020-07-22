@@ -292,6 +292,7 @@ class MainWindow(QWidget):
         self.yolov3Btn = QPushButton('Yolo识别')
 
         ## 坐标跟踪
+        self.setcoorTitle = QLabel('坐标设置')
         self.setcoorLabel_X = QLabel('x')
         self.setcoorLabel_Y = QLabel('y')
         self.setcoorBox_X = QLineEdit()
@@ -318,37 +319,41 @@ class MainWindow(QWidget):
         self.angel_box.setReadOnly(True)
 
         ## 帮助信息
-        self.help_box = QTextEdit('使用帮助:'+'\r\n')
+        self.help_box = QTextEdit('功能介绍:'+'\r\n'+'')
 
         ## 界面布局
         self.hbox = QHBoxLayout(self)   # 添加一个水平布局
         self.hbox.addWidget(self.lbl)
 
         self.gbox = QGridLayout(self)
-        self.gbox.addWidget(self.mtx_label, 1,1,1,1)
-        self.gbox.addWidget(self.mtx_text, 2,1,1,1)
-        self.gbox.addWidget(self.rt_label, 1,5,1,1)
-        self.gbox.addWidget(self.rt_text, 2,5,1,1)
-        self.gbox.addWidget(self.coor_label, 7,1,1,1)
-        self.gbox.addWidget(self.coor_box, 8,1,1,5)
-        self.gbox.addWidget(self.angel_label, 10,1,1,1)
-        self.gbox.addWidget(self.angel_box, 11,1,1,5)
+        self.gbox.addWidget(self.mtx_label, 1,1,1,1) # 内参标签
+        self.gbox.addWidget(self.rt_label, 1,4,1,1) # 外参标签
+        self.gbox.addWidget(self.mtx_text, 2,1,2,2) # 内参文本
+        self.gbox.addWidget(self.rt_text, 2,4,2,2)  # 外参文本
+
+        self.gbox.addWidget(self.coor_label, 4,1,1,1) # 坐标标签
+        self.gbox.addWidget(self.coor_box, 5,1,1,5) # 坐标文本
+        self.gbox.addWidget(self.angel_label, 6,1,1,1)# 角度标签
+        self.gbox.addWidget(self.angel_box, 7,1,1,5) # 角度文本
 
         ### 坐标追踪
-        self.gbox.addWidget(self.setcoorLabel_X, 12,1,1,1)
-        self.gbox.addWidget(self.setcoorBox_X, 12,2,1,1)
-        self.gbox.addWidget(self.setcoorLabel_Y, 12,3,1,1)
-        self.gbox.addWidget(self.setcoorBox_Y, 12,4,1,1)
-        self.gbox.addWidget(self.setcoorBtn, 12,5,1,1)
+        self.gbox.addWidget(self.setcoorTitle,8,1,1,5)
 
+        self.hcbox = QHBoxLayout(self)
+        self.hcbox.addWidget(self.setcoorLabel_X)
+        self.hcbox.addWidget(self.setcoorBox_X)
+        self.hcbox.addWidget(self.setcoorLabel_Y)
+        self.hcbox.addWidget(self.setcoorBox_Y)
+        self.hcbox.addWidget(self.setcoorBtn)
+        self.gbox.addLayout(self.hcbox,9,1,1,5)
 
-        self.gbox.addWidget(self.openCameraBtn,13,1,1,2)
-        self.gbox.addWidget(self.CalibBtn, 13,4,1,2)
-        self.gbox.addWidget(self.transBtn, 15,1,1,2)
-        self.gbox.addWidget(self.yolov3Btn,15,4,1,2)
-        self.gbox.addWidget(self.catchBtn, 17,1,1,2)
-        self.gbox.addWidget(self.closeCameraBtn, 17,4,1,2)
-        self.gbox.addWidget(self.help_box,19,1,1,5)
+        self.gbox.addWidget(self.openCameraBtn, 10,1,2,2)# 打开相机按钮
+        self.gbox.addWidget(self.closeCameraBtn, 10,4,2,2) # 相机标定按钮
+        self.gbox.addWidget(self.CalibBtn, 12,1,2,2) # 外惨标定按钮
+        self.gbox.addWidget(self.transBtn,12,4,2,2)
+        self.gbox.addWidget(self.yolov3Btn, 14,1,2,2)
+        self.gbox.addWidget(self.catchBtn, 14,4,2,2)
+        self.gbox.addWidget(self.help_box,16,1,5,5)
 
         self.hbox.addLayout(self.gbox)
 
