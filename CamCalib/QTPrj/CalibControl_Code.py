@@ -2,6 +2,7 @@
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
+from CalibControl_UI import *
 
 import cv2
 import numpy as np
@@ -222,7 +223,7 @@ class Calib:
         return worldpt
 
 
-class MainWindow(QWidget):
+class MainWindow(QWidget,CalibControl_UI):
     def __init__(self):
         super().__init__()
         self.initUI()
