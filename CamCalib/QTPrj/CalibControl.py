@@ -2,7 +2,8 @@
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
-from camera.CameraInterface import *
+from CameraInterface import *
+# from LBAS import *
 
 import cv2
 import numpy as np
@@ -220,9 +221,24 @@ class Calib:
         # print('worldpt:',worldpt)
         return worldpt
 
-class AxisImg():
-    def
 
+class SubWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('带坐标系的外参标定图')
+
+        Sub_widget = QWidget()  # 实例化一个widget控件
+        self.AxisImg = QLabel()
+        self.button = QPushButton('退出')
+        self.button.clicked.connect(self.checkout)
+        Sub_layout = QVBoxLayout()  # 实例化一个垂直布局层
+        Sub_layout.addWidget(self.AxisImg)
+        Sub_layout.addWidget(self.button)
+        Sub_widget.setLayout(Sub_layout)  # 设置widget控件布局为水平布局
+        self.setCentralWidget(Sub_widget)  # 设置窗口的中央部件
+
+    def checkout(self):
+        self.close()
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -230,6 +246,7 @@ class MainWindow(QWidget):
         self.initUI()
         self.initTimer()
         self.calib = None
+        self.camera = None
 
     def initTimer(self):
         self.timer = QTimer(self)
@@ -343,7 +360,7 @@ class MainWindow(QWidget):
         self.hcbox.addWidget(self.setcoorBtn)
         self.gbox.addLayout(self.hcbox,9,1,1,5)
 
-        self.gbox.addWidget(self.openCameraBtn, 10,1,2,2)# 打开相机按钮
+        self.gbox.addWidget(self.openCameraBtn, 10.5,1,2,2)# 打开相机按钮
         self.gbox.addWidget(self.closeCameraBtn, 10,4,2,2) # 相机标定按钮
         self.gbox.addWidget(self.CalibBtn, 12,1,2,2) # 外惨标定按钮
         self.gbox.addWidget(self.transBtn,12,4,2,2)
@@ -354,34 +371,34 @@ class MainWindow(QWidget):
 
         self.QLable_close()
         self.move(40, 40)
-        self.setWindowTitle('OPEN CV_Video')
-        self.help_box.setText('功能介绍:\r\n'+
+        self.setWindowTitle('操作界面')
+        self.help_box.setText('「目前可以公开的情报」\r\n'+
                               '相机标定：标定相机的内外参数'+'\r\n'
                               '外参标定：重新标定相机的外参'+'\r\n'
                               '目标抓取：抓取工件')
 
-        self.setGeometry(300, 40, 1280, 1000)
+        self.setGeometry(300, 40, 1300, 980)
         self.show()
 
     def calib_slot(self):
+        self.subwindow = SubWindow()
+        # 显示新窗口
+        self.subwindow.show()
+
         img_axis = self.calib.Transfer()
         img_axis = img_axis[:, 320:] # must before convert
         img_axis = cv2.cvtColor(img_axis, cv2.COLOR_BGR2RGB)
-
         heigt, width = img_axis.shape[:2]
         pixmap = QImage(img_axis, width, heigt, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(pixmap)
-
-
-        self.lbl.setPixmap(pixmap)
-
+        self.subwindow.AxisImg.setPixmap(pixmap)
         self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' +
                              '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
 
-
     def openCamera(self):
         self.lbl.setEnabled(True)
-        self.vc = cv2.VideoCapture(0)
+        # self.vc = cv2.VideoCapture(0)
+        self.camera = CameraInterface("LBAS", 0)
         self.openCameraBtn.setEnabled(False)
         self.closeCameraBtn.setEnabled(True)
         self.timer.start(100)
