@@ -269,78 +269,95 @@ class MainWindow(QWidget):
 
         ## 按钮
         self.openCameraBtn = QPushButton('打开相机')
-        self.openCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # self.openCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.openCameraBtn.setEnabled(True)
         self.openCameraBtn.clicked.connect(self.openCamera)
         self.CalibBtn = QPushButton('相机标定')
-        self.CalibBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # self.CalibBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.CalibBtn.clicked.connect(self.OpenCalib)
         self.transBtn = QPushButton('外参标定')
-        self.transBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # self.transBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.transBtn.setEnabled(False)
         self.transBtn.clicked.connect(self.calib_slot)
 
         self.catchBtn = QPushButton('目标抓取')
-        self.catchBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # self.catchBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.catchBtn.setEnabled(False)
         # self.catchBtn.clicked.connect(self.catch)
         self.closeCameraBtn = QPushButton('关闭相机')
-        self.closeCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # self.closeCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.closeCameraBtn.clicked.connect(self.closeCamera)
         self.closeCameraBtn.setEnabled(False)
 
-        self.helpBtn = QPushButton('README')
+        self.yolov3Btn = QPushButton('Yolo识别')
 
-        self.yolov3Btn = QPushButton('yolo识别')
-
-        # 设置按钮大小
-        self.openCameraBtn.setFixedSize(100, 60)
-        self.CalibBtn.setFixedSize(100, 60)
-        self.transBtn.setFixedSize(100, 60)
-        self.catchBtn.setFixedSize(100, 60)
-        self.closeCameraBtn.setFixedSize(100, 60)
-
+        ## 坐标跟踪
+        self.setcoorLabel_X = QLabel('x')
+        self.setcoorLabel_Y = QLabel('y')
+        self.setcoorBox_X = QLineEdit()
+        self.setcoorBox_Y = QLineEdit()
+        self.setcoorBtn = QPushButton('确认')
 
         ## 相机相关参数
         self.mtx_label = QLabel('内参')
         self.rt_label = QLabel('外参')
-        self.mtx_text = QTextBrowser()
-        self.rt_text = QTextBrowser()
+        self.mtx_text = QTextEdit()
+        self.rt_text = QTextEdit()
+
 
         ## 工件相关参数
         self.coor_label = QLabel('工件坐标')
-        self.coor_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.angel_label = QLabel('工件角度')
-        self.angel_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.coor_box = QLineEdit()
         self.angel_box = QLineEdit()
+
+        ## 设置只读属性的文本框
+        self.mtx_text.setReadOnly(True)
+        self.rt_text.setReadOnly(True)
         self.coor_box.setReadOnly(True)
         self.angel_box.setReadOnly(True)
+
+        ## 帮助信息
+        self.help_box = QTextEdit('使用帮助:'+'\r\n')
 
         ## 界面布局
         self.hbox = QHBoxLayout(self)   # 添加一个水平布局
         self.hbox.addWidget(self.lbl)
 
-        self.fbox = QFormLayout(self)   # 添加一个表单布局
-        self.fbox.addRow(self.mtx_label, self.mtx_text)
-        self.fbox.addRow(self.rt_label, self.rt_text)
-        self.fbox.addRow(self.coor_label,self.coor_box) #只有表单布局存在addrow
-        self.fbox.addRow(self.angel_label,self.angel_box)
-        self.fbox.setRowWrapPolicy(QFormLayout.WrapAllRows)  # 字段总是位与标签的下方
-        self.fbox.addRow(self.openCameraBtn)
-        self.fbox.addRow(self.CalibBtn)
-        self.fbox.addRow(self.transBtn)
-        self.fbox.addRow(self.catchBtn)
-        self.fbox.addRow(self.closeCameraBtn)
-        self.fbox.setRowWrapPolicy(QFormLayout.WrapAllRows)  # 字段总是位与标签的下方
-        self.hbox.addLayout(self.fbox)
+        self.gbox = QGridLayout(self)
+        self.gbox.addWidget(self.mtx_label, 1,1,1,1)
+        self.gbox.addWidget(self.mtx_text, 2,1,1,1)
+        self.gbox.addWidget(self.rt_label, 1,5,1,1)
+        self.gbox.addWidget(self.rt_text, 2,5,1,1)
+        self.gbox.addWidget(self.coor_label, 7,1,1,1)
+        self.gbox.addWidget(self.coor_box, 8,1,1,5)
+        self.gbox.addWidget(self.angel_label, 10,1,1,1)
+        self.gbox.addWidget(self.angel_box, 11,1,1,5)
 
-        self.setLayout(self.hbox)   # 设置widget控件布局为水平布局
+        ### 坐标追踪
+        self.gbox.
+        self.gbox.addWidget(self.setcoorLabel_X, 12,1,1,1)
+        self.gbox.addWidget(self.setcoorBox_X, 12,2,1,1)
+        self.gbox.addWidget(self.setcoorLabel_Y, 12,3,1,1)
+        self.gbox.addWidget(self.setcoorBox_Y, 12,4,1,1)
+        self.gbox.addWidget(self.setcoorBtn, 12,5,1,1)
+
+
+        self.gbox.addWidget(self.openCameraBtn,13,1,1,2)
+        self.gbox.addWidget(self.CalibBtn, 13,4,1,2)
+        self.gbox.addWidget(self.transBtn, 15,1,1,2)
+        self.gbox.addWidget(self.yolov3Btn,15,4,1,2)
+        self.gbox.addWidget(self.catchBtn, 17,1,1,2)
+        self.gbox.addWidget(self.closeCameraBtn, 17,4,1,2)
+        self.gbox.addWidget(self.help_box,19,1,1,5)
+
+        self.hbox.addLayout(self.gbox)
 
         self.QLable_close()
         self.move(40, 40)
         self.setWindowTitle('OPEN CV_Video')
-        self.setGeometry(300, 40, 1230, 1000)
+
+        self.setGeometry(300, 40, 1500, 1000)
         self.show()
 
     def calib_slot(self):
@@ -353,7 +370,7 @@ class MainWindow(QWidget):
         pixmap = QPixmap.fromImage(pixmap)
         self.lbl.setPixmap(pixmap)
 
-        self.rt_text.setText(np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' + 'r:\n' +np.array2string(self.calib.get_tmtx()))
+        self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' + '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
 
 
     def openCamera(self):
@@ -371,11 +388,16 @@ class MainWindow(QWidget):
         # 实例化函数
         self.calib = Calib()
         self.mtx_text.setText(np.array2string(self.calib.mtx,))
-        self.rt_text.setText(np.array2string(self.calib.rmtx,) +'\n\n'+ 'r:\n' + np.array2string(self.calib.tmtx,))
+        self.rt_text.setText('旋转向量：\r\n' + np.array2string(self.calib.rmtx,) +'\r\n\r\n'+ '平移向量:\r\n' + np.array2string(self.calib.tmtx,))
         self.coor_box.setText(np.array2string(self.calib.circle_objp))
         self.angel_box.setText(np.array2string(self.calib.angle))
         self.CalibBtn.setEnabled(False)
         self.transBtn.setEnabled(True)
+
+    def HelpText(self):
+        QMessageBox.information(self, '使用帮助', '相机标定：标定相机的内外参数'+'\r\n'
+                                                '外参标定：重新标定相机的外参'+'\r\n'
+                                                '目标抓取：抓取工件')
 
     def start(self):
         self.timer.start(100)
