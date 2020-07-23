@@ -557,9 +557,9 @@ class LBASCamera():
         return self.api_status(status)
 
     def MV_GIGE_ForceIpEx(self):
-        nIP = c_uint(0xc0a80433)
+        nIP = c_uint(0xc0a80533)
         nSubNetMask = c_uint(0xffffff00)
-        nDefultGateWay = c_uint(0xc0a80401)
+        nDefultGateWay = c_uint(0xc0a80501)
         status = self._MV_GIGE_ForceIpEx(self.m_handle,nIP,nSubNetMask,nDefultGateWay)
             
         print("MV_GIGE_ForceIpEx status:   ",status)
@@ -1034,7 +1034,6 @@ class LBASCamera():
             return False
 
         self.cam_init_state = True
-
         self.cam_init()
         
         return True

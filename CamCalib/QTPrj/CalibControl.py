@@ -10,6 +10,30 @@ import numpy as np
 import glob
 import sys
 
+
+class WarningBox(QMessageBox):
+    def __init__(self, text):
+        QMessageBox.__init__(self)
+        self.setText(text)
+
+        self.timer = QTimer()
+        self.timer.setInterval(3000)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.timeoutSlot)
+        self.timer.start()
+
+        ret = self.exec_()
+        if ret == QMessageBox.Ok:
+            self.ok_clicked()
+
+    def ok_clicked(self):
+        print("ok clicked...")
+
+    @Slot()
+    def timeoutSlot(self):
+        # print("get in time out")
+        self.close()
+
 class Calib:
     def __init__(self):
         self.mtx = None
@@ -247,16 +271,18 @@ class MainWindow(QWidget):
         self.initTimer()
         self.calib = None
         self.camera = None
+        self.camera = CameraInterface("LBAS", 0)
+        self.cam_state = False  # 用来显示相机的当前状态   True:打开   False:关闭，主要用于相机控制按钮的状态
 
     def initTimer(self):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.show_pic)
 
     def show_pic(self):
-        ret, img = self.vc.read()
-        if not ret:
-            print('read error!\n')
-            return
+        img = self.camera.pop_frame()
+        # if not ret:
+        #     print('read error!\n')
+        #     return
         cv2.flip(img, 1, img)
         cur_frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         heigt, width = cur_frame.shape[:2]
@@ -267,13 +293,15 @@ class MainWindow(QWidget):
 
     def openCamera(self):
         self.lbl.setEnabled(True)
-        self.vc = cv2.VideoCapture(0)
+        # self.vc = cv2.VideoCapture(0)
+        self.camera.open()
         self.openCameraBtn.setEnabled(False)
         self.closeCameraBtn.setEnabled(True)
         self.timer.start(100)
 
     def closeCamera(self):
-        self.vc.release()
+        # self.vc.release()
+        self.camera.close()
         self.openCameraBtn.setEnabled(True)
         self.closeCameraBtn.setEnabled(False)
         self.QLable_close()
@@ -289,7 +317,7 @@ class MainWindow(QWidget):
         ## 按钮
         self.openCameraBtn = QPushButton('打开相机')
         self.openCameraBtn.setEnabled(True)
-        self.openCameraBtn.clicked.connect(self.openCamera)
+        self.openCameraBtn.clicked.connect(self.cam_control)
         self.CalibBtn = QPushButton('相机标定')
         self.CalibBtn.clicked.connect(self.OpenCalib)
         self.transBtn = QPushButton('外参标定')
@@ -395,13 +423,42 @@ class MainWindow(QWidget):
         self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' +
                              '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
 
-    def openCamera(self):
-        self.lbl.setEnabled(True)
-        # self.vc = cv2.VideoCapture(0)
-        self.camera = CameraInterface("LBAS", 0)
-        self.openCameraBtn.setEnabled(False)
-        self.closeCameraBtn.setEnabled(True)
-        self.timer.start(100)
+    # def openCamera(self):
+    #     self.lbl.setEnabled(True)
+    #     # self.vc = cv2.VideoCapture(0)
+    #     self.camera = CameraInterface("LBAS", 0)
+    #     self.camera.open()
+    #     self.openCameraBtn.setEnabled(False)
+    #     self.closeCameraBtn.setEnabled(True)
+    #     self.timer.start(100)
+
+    def cam_control(self):
+        self.cam_state = not self.cam_state
+        if self.cam_state:
+            if self.on_open_camera():
+                self.lbl.setEnabled(True)
+                self.openCameraBtn.setText("关闭相机")
+                self.timer.start(100)
+            else:
+                self.cam_state = not self.cam_state
+        else:
+            self.closeCamera()
+            self.control.openCameraBtn.setText("打开相机")
+
+    def on_open_camera(self):
+        # cams_status = True
+        if self.camera is None:
+            status = False
+        else:
+            status = self.camera.open()
+        # if status:
+        #     self.update_timer.start()
+        #
+        # cams_status = cams_status and status
+
+        if not status:
+            self.warning = WarningBox("相机打开失败，请检查连线是否正确。")
+        return status
 
     def QLable_close(self):
         self.lbl.setStyleSheet("background:black;")

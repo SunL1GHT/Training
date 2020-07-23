@@ -10,15 +10,13 @@ from PySide2.QtGui import *
 
 
 API_STATUS_OK = 0
-# CAMERA_WIDTH = 640  #2592
-# CAMERA_HEIGHT = 480 #2048
-FEATURE_FILE = "./camera/LBASFeature.ini"
-# CAMERA_WIDTH = 2592  #2592
-# CAMERA_HEIGHT = 2048 #2048
-# CAMERA_WIDTH = 2448  #2592
-# CAMERA_HEIGHT = 2048 #2048
 CAMERA_WIDTH = 1280  #2592
 CAMERA_HEIGHT = 960 #2048
+FEATURE_FILE = "LBASFeature.ini"
+# CAMERA_WIDTH = 2592  #2592
+# CAMERA_HEIGHT = 2048 #2048
+# CAMERA_WIDTH = 640  #2592
+# CAMERA_HEIGHT = 480 #2048
 
 
 
@@ -474,14 +472,14 @@ class LBASCamera():
         self._MV_CC_CloseDevice          = wrap_func(self.sdk, "MV_CC_CloseDevice",         c_int,      [c_void_p])
         self._MV_CC_DestroyHandle        = wrap_func(self.sdk,"MV_CC_DestroyHandle",        c_int,      [c_void_p])
         self._MV_CC_GetIntValue          = wrap_func(self.sdk,"MV_CC_GetIntValue",          c_int,      [c_void_p,c_char_p,POINTER(MVCC_INTVALUE)])
-        self._MV_CC_GetIntValueEx        = wrap_func(self.sdk,"MV_CC_GetIntValueEx",        c_int,      [c_void_p,c_char_p,POINTER(MVCC_INTVALUE_EX)])
+        # self._MV_CC_GetIntValueEx        = wrap_func(self.sdk,"MV_CC_GetIntValueEx",        c_int,      [c_void_p,c_char_p,POINTER(MVCC_INTVALUE_EX)])
         # self._MV_CC_GetEnumValue         = wrap_func(self.sdk,"MV_CC_GetEnumValue",         c_int,      [c_void_p,c_char_p,POINTER(MVCC_ENUMVALUE)])
         self._MV_CC_GetFloatValue        = wrap_func(self.sdk,"MV_CC_GetFloatValue",        c_int,      [c_void_p,c_char_p,POINTER(MVCC_FLOATVALUE)])
         # self._MV_CC_GetBoolValue         = wrap_func(self.sdk,"MV_CC_GetBoolValue",         c_int,      [c_void_p,c_char_p,POINTER(c_bool)])
         self._MV_CC_GetStringValue       = wrap_func(self.sdk,"MV_CC_GetStringValue",       c_int,      [c_void_p,c_char_p,POINTER(MVCC_STRINGVALUE)])
         
         self._MV_CC_SetIntValue         = wrap_func(self.sdk,"MV_CC_SetIntValue",           c_int,      [c_void_p,c_char_p,c_uint])
-        self._MV_CC_SetIntValueEx        = wrap_func(self.sdk,"MV_CC_SetIntValueEx",        c_int,      [c_void_p,c_char_p,c_uint])
+        # self._MV_CC_SetIntValueEx        = wrap_func(self.sdk,"MV_CC_SetIntValueEx",        c_int,      [c_void_p,c_char_p,c_uint])
         # self._MV_CC_SetEnumValue         = wrap_func(self.sdk,"MV_CC_SetEnumValue",         c_int,      [c_void_p,c_char_p,c_uint])
         # self._MV_CC_SetEnumValueByString = wrap_func(self.sdk,"MV_CC_SetEnumValueByString", c_int,      [c_void_p,c_char_p,c_char_p])
         self._MV_CC_SetFloatValue        = wrap_func(self.sdk,"MV_CC_SetFloatValue",        c_int,      [c_void_p,c_char_p,c_float])
@@ -513,23 +511,13 @@ class LBASCamera():
         self.channel = 3
         self.cam_index = camindex
 
-        # self.signal = CustomizedSignal()
-        # self.reConnect_timer = QTimer(self,interval=1000)
-        # self.reConnect_timer.timeout.connect(self.forceIp)
-        # self.reConnect_timer.setSignalShot(True)
-        # self.reConnect_count = 0
 
-
-        # self.rgb_buf = self._malloc(1280*960*3)
-        # self.mono_buf = self._malloc(1280*960*1)
-        # self.bgr_buf = self._malloc(1280*960*3)
         self.pbyBuffer = POINTER(c_uint8)()
         self.image = None   # used for save
         self.camera_isOpen = False    #用来表示当前相机是否已经打开
         self.cam_init_state = None        
 
-        self.cam_init_state = self.forceIp()
-        # self.tryReConnectToCam()
+        self.cam_init_state = self.forceIp("192.168.5.51")
 
     def api_status(self,status):
         if status == API_STATUS_OK:
@@ -556,10 +544,11 @@ class LBASCamera():
         print("MV_CC_FeatureSave   status:   ",status)
         return self.api_status(status)
 
-    def MV_GIGE_ForceIpEx(self):
-        nIP = c_uint(0xc0a80433)
-        nSubNetMask = c_uint(0xffffff00)
-        nDefultGateWay = c_uint(0xc0a80401)
+    def MV_GIGE_ForceIpEx(self,nIP,nSubNetMask,nDefultGateWay):
+        # return True
+        # nIP = c_uint(0xc0a80533)
+        # nSubNetMask = c_uint(0xffffff00)
+        # nDefultGateWay = c_uint(0xc0a80501)
         status = self._MV_GIGE_ForceIpEx(self.m_handle,nIP,nSubNetMask,nDefultGateWay)
             
         print("MV_GIGE_ForceIpEx status:   ",status)
@@ -591,37 +580,12 @@ class LBASCamera():
         self.m_stDevList = MV_CC_DEVICE_INFO_LIST()
         status = self._MV_CC_EnumDevicesEx(nTLayerType,byref(self.m_stDevList),b'GEV')
 
-
-
-
-
         print("MV_CC_EnumDevicesEx status: ",status, "self.m_stDevList.nDeviceNum:", self.m_stDevList.nDeviceNum)
         return self.api_status(status)
         
 
-    # #选择查找到的第一台在线设备，创建设备句柄
-    # def MV_CC_CreateHandle(self):
-    #     self.m_handle = c_void_p(None)
-    #     # m_stDevInfo  = MV_CC_DEVICE_INFO()
-    #     status = 0
-
-    #     for index in range(0,self.m_stDevList.nDeviceNum):
-    #         print("index === ",index,type(index))
-    #         nDeviceIndex = 0
-    #         m_stDevInfo  = MV_CC_DEVICE_INFO()
-    #         #有疑惑  self.m_stDevList.acDescription[nDeviceIndex]
-    #         #######????????????????????????
-    #         #######????????????????????????
-    #         self._memcpy(byref(m_stDevInfo),self.m_stDevList.pDeviceInfo[index],sizeof(MV_CC_DEVICE_INFO))
-    #         status = self._MV_CC_CreateHandle(byref(self.m_handle),byref(m_stDevInfo)) or status
-    #         print("MV_CC_CreateHandle status: ",status)
-    #         # return self.api_status(status)
-        
-    #     return self.api_status(status)
-
 
     def get_cam_info_for_display(self):
-
         #获取相机的width
         self.info.width = self.MV_CC_GetIntValueEx("Width")
         self.info.height = self.MV_CC_GetIntValueEx("Height")
@@ -670,15 +634,9 @@ class LBASCamera():
             return
         string = 'ExposureTime'
         status = self.MV_CC_SetFloatValue(string,val)
-        self.info.exposure_time = val
-
-
-        # #重新生成ini文件
-        # # os.remove(FEATURE_FILE)
-        # self.MV_CC_FeatureSave()
-        # self.get_cam_info_for_display()
-
-        return status
+        self.CameraGetExposureTime()
+        print(status,self.api_status(status))
+        return self.api_status(status)
 
     #设置相机的x偏移
     def CameraSetOffsetX(self,val):
@@ -688,7 +646,7 @@ class LBASCamera():
         string = "OffsetX"
         status = self.MV_CC_SetIntValue(string,val)
 
-
+        
 
         return self.api_status(status)
 
@@ -730,11 +688,12 @@ class LBASCamera():
 
 
     def MV_CC_GetIntValueEx(self,string):
-        stIntvalue  = MVCC_INTVALUE_EX()
-        c_s = create_string_buffer(string.encode('utf-8'))
-        status = self._MV_CC_GetIntValueEx(self.m_handle,c_s,byref(stIntvalue))
-        print("MV_CC_GetIntValue status: ",status,"      val ======= ",stIntvalue.nCurValue)
-        return stIntvalue.nCurValue
+        pass
+        # stIntvalue  = MVCC_INTVALUE_EX()
+        # c_s = create_string_buffer(string.encode('utf-8'))
+        # status = self._MV_CC_GetIntValueEx(self.m_handle,c_s,byref(stIntvalue))
+        # print("MV_CC_GetIntValue status: ",status,"      val ======= ",stIntvalue.nCurValue)
+        # return stIntvalue.nCurValue
 
         
 
@@ -784,13 +743,14 @@ class LBASCamera():
 
     #设置相机int型节点值（支持64位）
     def MV_CC_SetIntValueEx(self,string,val):
-        if self.m_handle == None:
-            return
+        pass
+        # if self.m_handle == None:
+        #     return
         
-        c_s = create_string_buffer(string.encode('utf-8'))
-        status = self._MV_CC_SetIntValueEx(self.m_handle,c_s , val)
-        print("MV_CC_SetIntValueEx status: ",status)
-        return self.api_status(status)
+        # c_s = create_string_buffer(string.encode('utf-8'))
+        # status = self._MV_CC_SetIntValueEx(self.m_handle,c_s , val)
+        # print("MV_CC_SetIntValueEx status: ",status)
+        # return self.api_status(status)
         
 
     #设置相机Enum型节点值
@@ -810,6 +770,7 @@ class LBASCamera():
         c_s = create_string_buffer(string.encode('utf-8'))
         status = self._MV_CC_SetFloatValue(self.m_handle,c_s,val)
         print("MV_CC_SetFloatValue status: ",status)
+        return status
 
     #设置相机bool型节点值
     def MV_CC_SetBoolValue(self,string,val):
@@ -833,12 +794,6 @@ class LBASCamera():
         # print("MV_CC_StartGrabbing status: ",status)
         return self.api_status(status)
 
-
-    # def MV_CC_GetImageBuffer(self):
-    #     stOutFrame = MV_FRAME_OUT()
-    #     status = self._MV_CC_GetImageBuffer(self.m_handle,byref(stOutFrame),1000)
-
-        
 
 
 
@@ -905,7 +860,7 @@ class LBASCamera():
     #     self.reConnect_timer.start()
 
     def cam_init(self):
-        print("get in cam init..")
+        # print("get in cam init..")
         
 
         if not self.MV_CC_EnumDevicesEx():    # 枚举设备成功
@@ -918,6 +873,8 @@ class LBASCamera():
         if not self.MV_CC_OpenDevice(): # 打开设备成功
             return False
 
+
+        self.CameraGetExposureTime()
         # self.reConnect_timer.stop()
         # self.MV_CC_FeatureLoad()
 
@@ -942,7 +899,7 @@ class LBASCamera():
         if not self.cam_init_state:
             self.cam_init()
 
-        
+        # 
         if not self.MV_CC_StartGrabbing():  # 抓流成功
             return False
 
@@ -1018,24 +975,55 @@ class LBASCamera():
         return status
 
 
+    def forceIp(self,string):
+        
+        list_ = string.split(".")
+        sum_ = 0x0
+        for i in list_:
+            sum_ = sum_ <<8
+            sum_ |= int(hex(int(i,base=10)),base=16)
+        nIP = c_uint(int(hex(sum_),base=16))
+        sum_ = sum_>>8
+        sum_ = sum_<<8
+        sum_ |= 0x01
+        nSubNetMask = c_uint(0xffffff00)
+        nDefultGateWay = c_uint(int(hex(sum_),base=16))
 
-    def forceIp(self):
-        # self.reConnect_count += 1
-        print("get in cam init..")
         if not self.MV_CC_EnumDevicesEx():    # 枚举设备成功
             return False
         if self.m_stDevList.nDeviceNum == 0:    # 设备数量
             return False
         if not self.MV_CC_CreateHandle():   #创建句柄成功
             return False
-        if not self.MV_GIGE_ForceIpEx():
+        if not self.MV_GIGE_ForceIpEx(nIP,nSubNetMask,nDefultGateWay):
             return False
         if not self.MV_CC_CreateHandle():   #创建句柄成功
             return False
-
         self.cam_init_state = True
-
         self.cam_init()
         
+        
         return True
+
+
+
+    # def forceIp(self):
+    #     # self.reConnect_count += 1
+    #     print("get in cam init..")
+    #     if not self.MV_CC_EnumDevicesEx():    # 枚举设备成功
+    #         return False
+    #     if self.m_stDevList.nDeviceNum == 0:    # 设备数量
+    #         return False
+    #     if not self.MV_CC_CreateHandle():   #创建句柄成功
+    #         return False
+    #     if not self.MV_GIGE_ForceIpEx():
+    #         return False
+    #     if not self.MV_CC_CreateHandle():   #创建句柄成功
+    #         return False
+
+    #     self.cam_init_state = True
+
+    #     self.cam_init()
+        
+    #     return True
 
