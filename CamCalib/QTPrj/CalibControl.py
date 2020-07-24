@@ -341,6 +341,11 @@ class MainWindow(QWidget):
         self.setcoorBox_Y = QLineEdit()
         self.setcoorBtn = QPushButton('确认')
 
+
+        ## 机械手当前坐标
+        self.armcoorTitle = QLabel('机械手坐标')
+        self.armcoorBox = QLineEdit()
+
         ## 相机相关参数
         self.mtx_label = QLabel('内参')
         self.rt_label = QLabel('外参')
@@ -363,7 +368,7 @@ class MainWindow(QWidget):
         ## 帮助信息
         self.help_box = QTextEdit()
 
-        ## 界面布局
+        # 界面布局
         self.hbox = QHBoxLayout(self)   # 添加一个水平布局
         self.hbox.addWidget(self.lbl)
 
@@ -378,20 +383,24 @@ class MainWindow(QWidget):
         self.gbox.addWidget(self.angel_label, 6,1,1,1)# 角度标签
         self.gbox.addWidget(self.angel_box, 7,1,1,5) # 角度文本
 
-        ### 坐标追踪
-        self.gbox.addWidget(self.setcoorTitle,8,1,1,5)
+        ## 机械手坐标
+        self.gbox.addWidget(self.armcoorTitle,8,1,1,5)
+        self.gbox.addWidget(self.armcoorBox,9,1,1,5)
+
+        ## 坐标跟踪
+        self.gbox.addWidget(self.setcoorTitle,10,1,1,5)
         self.hcbox = QHBoxLayout(self)
         self.hcbox.addWidget(self.setcoorLabel_X)
         self.hcbox.addWidget(self.setcoorBox_X)
         self.hcbox.addWidget(self.setcoorLabel_Y)
         self.hcbox.addWidget(self.setcoorBox_Y)
         self.hcbox.addWidget(self.setcoorBtn)
-        self.gbox.addLayout(self.hcbox,9,1,1,5)
+        self.gbox.addLayout(self.hcbox,11,1,1,5)
 
-        self.gbox.addWidget(self.openCameraBtn, 10.5,1,2,2)# 打开相机按钮
-        self.gbox.addWidget(self.closeCameraBtn, 10,4,2,2) # 相机标定按钮
-        self.gbox.addWidget(self.CalibBtn, 12,1,2,2) # 外惨标定按钮
-        self.gbox.addWidget(self.transBtn,12,4,2,2)
+        self.gbox.addWidget(self.openCameraBtn, 12,1,2,2)# 打开相机按钮
+        self.gbox.addWidget(self.closeCameraBtn, 12,4,2,2) # 相机标定按钮
+        self.gbox.addWidget(self.CalibBtn, 13,1,2,2) # 外惨标定按钮
+        self.gbox.addWidget(self.transBtn,13,4,2,2)
         self.gbox.addWidget(self.yolov3Btn, 14,1,2,2)
         self.gbox.addWidget(self.catchBtn, 14,4,2,2)
         self.gbox.addWidget(self.help_box,16,1,5,5)
@@ -422,15 +431,6 @@ class MainWindow(QWidget):
         self.subwindow.AxisImg.setPixmap(pixmap)
         self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' +
                              '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
-
-    # def openCamera(self):
-    #     self.lbl.setEnabled(True)
-    #     # self.vc = cv2.VideoCapture(0)
-    #     self.camera = CameraInterface("LBAS", 0)
-    #     self.camera.open()
-    #     self.openCameraBtn.setEnabled(False)
-    #     self.closeCameraBtn.setEnabled(True)
-    #     self.timer.start(100)
 
     def cam_control(self):
         self.cam_state = not self.cam_state
