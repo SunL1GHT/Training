@@ -2,11 +2,37 @@
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
 from PySide2.QtGui import *
+from CameraInterface import *
+# from LBAS import *
 
 import cv2
 import numpy as np
 import glob
 import sys
+
+
+class WarningBox(QMessageBox):
+    def __init__(self, text):
+        QMessageBox.__init__(self)
+        self.setText(text)
+
+        self.timer = QTimer()
+        self.timer.setInterval(3000)
+        self.timer.setSingleShot(True)
+        self.timer.timeout.connect(self.timeoutSlot)
+        self.timer.start()
+
+        ret = self.exec_()
+        if ret == QMessageBox.Ok:
+            self.ok_clicked()
+
+    def ok_clicked(self):
+        print("ok clicked...")
+
+    @Slot()
+    def timeoutSlot(self):
+        # print("get in time out")
+        self.close()
 
 class Calib:
     def __init__(self):
@@ -112,8 +138,6 @@ class Calib:
             imgpts, jac = cv2.projectPoints(axis_axis, self.rmtx, self.tmtx, self.mtx, self.dist)
             img = self.draw_axis(img, imgp, imgpts)
 
-            # cv2.imshow('img', img)
-            # cv2.waitKey(2000)
             cv2.imwrite('../Calibresult/gesture.png', img)
 
             print('imgp:', imgp[0])
@@ -222,22 +246,43 @@ class Calib:
         return worldpt
 
 
+class SubWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('带坐标系的外参标定图')
+
+        Sub_widget = QWidget()  # 实例化一个widget控件
+        self.AxisImg = QLabel()
+        self.button = QPushButton('退出')
+        self.button.clicked.connect(self.checkout)
+        Sub_layout = QVBoxLayout()  # 实例化一个垂直布局层
+        Sub_layout.addWidget(self.AxisImg)
+        Sub_layout.addWidget(self.button)
+        Sub_widget.setLayout(Sub_layout)  # 设置widget控件布局为水平布局
+        self.setCentralWidget(Sub_widget)  # 设置窗口的中央部件
+
+    def checkout(self):
+        self.close()
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
         self.initTimer()
         self.calib = None
+        self.camera = None
+        self.camera = CameraInterface("LBAS", 0)
+        self.cam_state = False  # 用来显示相机的当前状态   True:打开   False:关闭，主要用于相机控制按钮的状态
 
     def initTimer(self):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.show_pic)
 
     def show_pic(self):
-        ret, img = self.vc.read()
-        if not ret:
-            print('read error!\n')
-            return
+        img = self.camera.pop_frame()
+        # if not ret:
+        #     print('read error!\n')
+        #     return
         cv2.flip(img, 1, img)
         cur_frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         heigt, width = cur_frame.shape[:2]
@@ -248,13 +293,15 @@ class MainWindow(QWidget):
 
     def openCamera(self):
         self.lbl.setEnabled(True)
-        self.vc = cv2.VideoCapture(0)
+        # self.vc = cv2.VideoCapture(0)
+        self.camera.open()
         self.openCameraBtn.setEnabled(False)
         self.closeCameraBtn.setEnabled(True)
         self.timer.start(100)
 
     def closeCamera(self):
-        self.vc.release()
+        # self.vc.release()
+        self.camera.close()
         self.openCameraBtn.setEnabled(True)
         self.closeCameraBtn.setEnabled(False)
         self.QLable_close()
@@ -269,34 +316,35 @@ class MainWindow(QWidget):
 
         ## 按钮
         self.openCameraBtn = QPushButton('打开相机')
-        # self.openCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.openCameraBtn.setEnabled(True)
-        self.openCameraBtn.clicked.connect(self.openCamera)
+        self.openCameraBtn.clicked.connect(self.cam_control)
         self.CalibBtn = QPushButton('相机标定')
-        # self.CalibBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.CalibBtn.clicked.connect(self.OpenCalib)
         self.transBtn = QPushButton('外参标定')
-        # self.transBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.transBtn.setEnabled(False)
         self.transBtn.clicked.connect(self.calib_slot)
 
         self.catchBtn = QPushButton('目标抓取')
-        # self.catchBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.catchBtn.setEnabled(False)
         # self.catchBtn.clicked.connect(self.catch)
         self.closeCameraBtn = QPushButton('关闭相机')
-        # self.closeCameraBtn.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.closeCameraBtn.clicked.connect(self.closeCamera)
         self.closeCameraBtn.setEnabled(False)
 
         self.yolov3Btn = QPushButton('Yolo识别')
 
         ## 坐标跟踪
-        self.setcoorLabel_X = QLabel('x')
-        self.setcoorLabel_Y = QLabel('y')
+        self.setcoorTitle = QLabel('坐标设置')
+        self.setcoorLabel_X = QLabel('x:')
+        self.setcoorLabel_Y = QLabel('y:')
         self.setcoorBox_X = QLineEdit()
         self.setcoorBox_Y = QLineEdit()
         self.setcoorBtn = QPushButton('确认')
+
+
+        ## 机械手当前坐标
+        self.armcoorTitle = QLabel('机械手坐标')
+        self.armcoorBox = QLineEdit()
 
         ## 相机相关参数
         self.mtx_label = QLabel('内参')
@@ -318,66 +366,99 @@ class MainWindow(QWidget):
         self.angel_box.setReadOnly(True)
 
         ## 帮助信息
-        self.help_box = QTextEdit('使用帮助:'+'\r\n')
+        self.help_box = QTextEdit()
 
-        ## 界面布局
+        # 界面布局
         self.hbox = QHBoxLayout(self)   # 添加一个水平布局
         self.hbox.addWidget(self.lbl)
 
         self.gbox = QGridLayout(self)
-        self.gbox.addWidget(self.mtx_label, 1,1,1,1)
-        self.gbox.addWidget(self.mtx_text, 2,1,1,1)
-        self.gbox.addWidget(self.rt_label, 1,5,1,1)
-        self.gbox.addWidget(self.rt_text, 2,5,1,1)
-        self.gbox.addWidget(self.coor_label, 7,1,1,1)
-        self.gbox.addWidget(self.coor_box, 8,1,1,5)
-        self.gbox.addWidget(self.angel_label, 10,1,1,1)
-        self.gbox.addWidget(self.angel_box, 11,1,1,5)
+        self.gbox.addWidget(self.mtx_label, 1,1,1,1) # 内参标签
+        self.gbox.addWidget(self.rt_label, 1,4,1,1) # 外参标签
+        self.gbox.addWidget(self.mtx_text, 2,1,2,2) # 内参文本
+        self.gbox.addWidget(self.rt_text, 2,4,2,2)  # 外参文本
 
-        ### 坐标追踪
-        self.gbox.addWidget(self.setcoorLabel_X, 12,1,1,1)
-        self.gbox.addWidget(self.setcoorBox_X, 12,2,1,1)
-        self.gbox.addWidget(self.setcoorLabel_Y, 12,3,1,1)
-        self.gbox.addWidget(self.setcoorBox_Y, 12,4,1,1)
-        self.gbox.addWidget(self.setcoorBtn, 12,5,1,1)
+        self.gbox.addWidget(self.coor_label, 4,1,1,1) # 坐标标签
+        self.gbox.addWidget(self.coor_box, 5,1,1,5) # 坐标文本
+        self.gbox.addWidget(self.angel_label, 6,1,1,1)# 角度标签
+        self.gbox.addWidget(self.angel_box, 7,1,1,5) # 角度文本
 
+        ## 机械手坐标
+        self.gbox.addWidget(self.armcoorTitle,8,1,1,5)
+        self.gbox.addWidget(self.armcoorBox,9,1,1,5)
 
-        self.gbox.addWidget(self.openCameraBtn,13,1,1,2)
-        self.gbox.addWidget(self.CalibBtn, 13,4,1,2)
-        self.gbox.addWidget(self.transBtn, 15,1,1,2)
-        self.gbox.addWidget(self.yolov3Btn,15,4,1,2)
-        self.gbox.addWidget(self.catchBtn, 17,1,1,2)
-        self.gbox.addWidget(self.closeCameraBtn, 17,4,1,2)
-        self.gbox.addWidget(self.help_box,19,1,1,5)
+        ## 坐标跟踪
+        self.gbox.addWidget(self.setcoorTitle,10,1,1,5)
+        self.hcbox = QHBoxLayout(self)
+        self.hcbox.addWidget(self.setcoorLabel_X)
+        self.hcbox.addWidget(self.setcoorBox_X)
+        self.hcbox.addWidget(self.setcoorLabel_Y)
+        self.hcbox.addWidget(self.setcoorBox_Y)
+        self.hcbox.addWidget(self.setcoorBtn)
+        self.gbox.addLayout(self.hcbox,11,1,1,5)
 
+        self.gbox.addWidget(self.openCameraBtn, 12,1,2,2)# 打开相机按钮
+        self.gbox.addWidget(self.closeCameraBtn, 12,4,2,2) # 相机标定按钮
+        self.gbox.addWidget(self.CalibBtn, 13,1,2,2) # 外惨标定按钮
+        self.gbox.addWidget(self.transBtn,13,4,2,2)
+        self.gbox.addWidget(self.yolov3Btn, 14,1,2,2)
+        self.gbox.addWidget(self.catchBtn, 14,4,2,2)
+        self.gbox.addWidget(self.help_box,16,1,5,5)
         self.hbox.addLayout(self.gbox)
 
         self.QLable_close()
         self.move(40, 40)
-        self.setWindowTitle('OPEN CV_Video')
+        self.setWindowTitle('操作界面')
+        self.help_box.setText('「目前可以公开的情报」\r\n'+
+                              '相机标定：标定相机的内外参数'+'\r\n'
+                              '外参标定：重新标定相机的外参'+'\r\n'
+                              '目标抓取：抓取工件')
 
-        self.setGeometry(300, 40, 1500, 1000)
+        self.setGeometry(300, 40, 1300, 980)
         self.show()
 
     def calib_slot(self):
+        self.subwindow = SubWindow()
+        # 显示新窗口
+        self.subwindow.show()
+
         img_axis = self.calib.Transfer()
         img_axis = img_axis[:, 320:] # must before convert
         img_axis = cv2.cvtColor(img_axis, cv2.COLOR_BGR2RGB)
-
         heigt, width = img_axis.shape[:2]
         pixmap = QImage(img_axis, width, heigt, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(pixmap)
-        self.lbl.setPixmap(pixmap)
+        self.subwindow.AxisImg.setPixmap(pixmap)
+        self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' +
+                             '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
 
-        self.rt_text.setText('旋转向量:\r\n' + np.array2string(self.calib.get_rmtx()) + '\r\n\r\n' + '平移向量:\r\n' +np.array2string(self.calib.get_tmtx()))
+    def cam_control(self):
+        self.cam_state = not self.cam_state
+        if self.cam_state:
+            if self.on_open_camera():
+                self.lbl.setEnabled(True)
+                self.openCameraBtn.setText("关闭相机")
+                self.timer.start(100)
+            else:
+                self.cam_state = not self.cam_state
+        else:
+            self.closeCamera()
+            self.control.openCameraBtn.setText("打开相机")
 
+    def on_open_camera(self):
+        # cams_status = True
+        if self.camera is None:
+            status = False
+        else:
+            status = self.camera.open()
+        # if status:
+        #     self.update_timer.start()
+        #
+        # cams_status = cams_status and status
 
-    def openCamera(self):
-        self.lbl.setEnabled(True)
-        self.vc = cv2.VideoCapture(0)
-        self.openCameraBtn.setEnabled(False)
-        self.closeCameraBtn.setEnabled(True)
-        self.timer.start(100)
+        if not status:
+            self.warning = WarningBox("相机打开失败，请检查连线是否正确。")
+        return status
 
     def QLable_close(self):
         self.lbl.setStyleSheet("background:black;")
@@ -387,7 +468,8 @@ class MainWindow(QWidget):
         # 实例化函数
         self.calib = Calib()
         self.mtx_text.setText(np.array2string(self.calib.mtx,))
-        self.rt_text.setText('旋转向量：\r\n' + np.array2string(self.calib.rmtx,) +'\r\n\r\n'+ '平移向量:\r\n' + np.array2string(self.calib.tmtx,))
+        self.rt_text.setText('旋转向量：\r\n' + np.array2string(self.calib.rmtx,) +'\r\n\r\n'+
+                             '平移向量:\r\n' + np.array2string(self.calib.tmtx,))
         self.coor_box.setText(np.array2string(self.calib.circle_objp))
         self.angel_box.setText(np.array2string(self.calib.angle))
         self.CalibBtn.setEnabled(False)
