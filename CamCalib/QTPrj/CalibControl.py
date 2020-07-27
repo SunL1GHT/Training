@@ -342,10 +342,6 @@ class MainWindow(QWidget):
         self.setcoorBtn = QPushButton('移动')
 
 
-        ## 机械手当前坐标
-        self.armcoorTitle = QLabel('机械手坐标')
-        self.armcoorBox = QLineEdit()
-
         ## 相机相关参数
         self.mtx_label = QLabel('内参')
         self.rt_label = QLabel('外参')
@@ -383,33 +379,29 @@ class MainWindow(QWidget):
         self.gbox.addWidget(self.angel_label, 6,1,1,1)# 角度标签
         self.gbox.addWidget(self.angel_box, 7,1,1,5) # 角度文本
 
-        ## 机械手坐标
-        self.gbox.addWidget(self.armcoorTitle,8,1,1,5)
-        self.gbox.addWidget(self.armcoorBox,9,1,1,5)
-
         ## 坐标跟踪
-        self.gbox.addWidget(self.setcoorTitle,10,1,1,5)
+        self.gbox.addWidget(self.setcoorTitle,8,1,1,5)
         self.hcbox = QHBoxLayout(self)
         self.hcbox.addWidget(self.setcoorLabel_X)
         self.hcbox.addWidget(self.setcoorBox_X)
         self.hcbox.addWidget(self.setcoorLabel_Y)
         self.hcbox.addWidget(self.setcoorBox_Y)
         self.hcbox.addWidget(self.setcoorBtn)
-        self.gbox.addLayout(self.hcbox,11,1,1,5)
+        self.gbox.addLayout(self.hcbox,9,1,1,5)
 
-        self.gbox.addWidget(self.openCameraBtn, 12,1,2,2)# 打开相机按钮
-        self.gbox.addWidget(self.closeCameraBtn, 12,4,2,2) # 相机标定按钮
-        self.gbox.addWidget(self.CalibBtn, 13,1,2,2) # 外惨标定按钮
-        self.gbox.addWidget(self.transBtn,13,4,2,2)
-        self.gbox.addWidget(self.yolov3Btn, 14,1,2,2)
-        self.gbox.addWidget(self.catchBtn, 14,4,2,2)
-        self.gbox.addWidget(self.help_box,16,1,5,5)
+        self.gbox.addWidget(self.openCameraBtn, 10,1,2,2)# 打开相机按钮
+        self.gbox.addWidget(self.closeCameraBtn, 10,4,2,2) # 相机标定按钮
+        self.gbox.addWidget(self.CalibBtn, 11,1,2,2) # 外惨标定按钮
+        self.gbox.addWidget(self.transBtn,11,4,2,2)
+        self.gbox.addWidget(self.yolov3Btn, 12,1,2,2)
+        self.gbox.addWidget(self.catchBtn, 12,4,2,2)
+        self.gbox.addWidget(self.help_box,14,1,5,5)
         self.hbox.addLayout(self.gbox)
 
         self.QLable_close()
         self.move(40, 40)
         self.setWindowTitle('操作界面')
-        self.help_box.setText('「目前可以公开的情报」\r\n'+
+        self.help_box.setText('#'*6+'「目前可以公开的情报」'+'#'*6+'\r\n'+
                               '相机标定：标定相机的内外参数'+'\r\n'
                               '外参标定：重新标定相机的外参'+'\r\n'
                               '目标抓取：抓取工件')
@@ -474,11 +466,6 @@ class MainWindow(QWidget):
         self.angel_box.setText(np.array2string(self.calib.angle))
         self.CalibBtn.setEnabled(False)
         self.transBtn.setEnabled(True)
-
-    def HelpText(self):
-        QMessageBox.information(self, '使用帮助', '相机标定：标定相机的内外参数'+'\r\n'
-                                                '外参标定：重新标定相机的外参'+'\r\n'
-                                                '目标抓取：抓取工件')
 
     def start(self):
         self.timer.start(100)
