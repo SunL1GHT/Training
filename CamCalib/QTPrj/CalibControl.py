@@ -339,7 +339,7 @@ class MainWindow(QWidget):
         self.setcoorLabel_Y = QLabel('y:')
         self.setcoorBox_X = QLineEdit()
         self.setcoorBox_Y = QLineEdit()
-        self.setcoorBtn = QPushButton('确认')
+        self.setcoorBtn = QPushButton('移动')
 
 
         ## 机械手当前坐标

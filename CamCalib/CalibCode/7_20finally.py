@@ -101,7 +101,7 @@ def DetectCircle(matrix, Rmatrix, tmatrix):
     for cnt in contours:
         area = cv2.contourArea(cnt)
         # 工件大圆检测
-        if 1000 < area < 500000:
+        if 10000 < area < 50000:
             cv2.drawContours(imgroi, cnt, -1, (255, 30, 255), 2)  # 绘制外轮廓
             # peri = cv2.arcLength(cnt, True)
             # print('工件的周长是:', peri)
