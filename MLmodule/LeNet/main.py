@@ -17,8 +17,8 @@ epoches = 50
 
 trans_img = transforms.ToTensor()
 
-trainset = MNIST('./data', train=True, download=False, transform=trans_img)
-testset = MNIST('./data', train=False, download=False, transform=trans_img)
+trainset = MNIST('./data', train=True, download=True, transform=trans_img)
+testset = MNIST('./data', train=False, download=True, transform=trans_img)
 
 trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
 testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
